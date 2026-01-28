@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Photo = {
@@ -47,6 +47,7 @@ function seededRotate(seed: string): number {
 export default function App(): JSX.Element {
   const [inEnvelope, setInEnvelope] = useState<Photo[]>(PHOTOS);
   const [inStack, setInStack] = useState<Photo[]>([]);
+  const [photoSize, setPhotoSize] = useState<{ w: number; h: number } | null>(null);
 
   const topPhoto = inEnvelope[0] ?? null;
 
@@ -93,6 +94,7 @@ export default function App(): JSX.Element {
               topPhoto={topPhoto}
               remaining={inEnvelope.length}
               onClickTop={moveTopToStack}
+              onSizeChange={setPhotoSize}
             />
           </div>
         </div>
@@ -100,7 +102,7 @@ export default function App(): JSX.Element {
         {/* RIGHT: Photo stack */}
         <div className="relative w-[50%] flex-1 overflow-hidden">
           <div className="absolute right-1/2 top-1/2 translate-x-1/2 -translate-y-1/2">
-            <PhotoStack photos={inStack} transforms={stackTransforms} />
+            <PhotoStack photos={inStack} transforms={stackTransforms} photoSize={photoSize} />
           </div>
         </div>
       </div>
@@ -113,20 +115,44 @@ interface EnvelopeSceneProps {
   topPhoto: Photo | null;
   remaining: number;
   onClickTop: () => void;
+  onSizeChange?: (size: { w: number; h: number } | null) => void;
 }
 
 function EnvelopeScene({
   topPhoto,
   onClickTop,
+  onSizeChange,
 }: EnvelopeSceneProps): JSX.Element {
   const [isHovered, setIsHovered] = useState(false);
+  const photoRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!onSizeChange) return;
+    const el = photoRef.current;
+    if (!el) {
+      onSizeChange(null);
+      return;
+    }
+    const notify = () => {
+      const r = el.getBoundingClientRect();
+      onSizeChange({ w: Math.round(r.width), h: Math.round(r.height) });
+    };
+    notify();
+    const ro = new ResizeObserver(notify);
+    ro.observe(el);
+    window.addEventListener('resize', notify);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', notify);
+    };
+  }, [onSizeChange]);
 
   return (
     <div className="relative w-full h-full">
       {/* Container to control scaling */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[100%]" style={{ aspectRatio: '4/3' }}>
         {/* Photo peeking out */}
-        <div className="absolute left-1/2 top-1/4 -translate-x-1/2" style={{ width: '65%', aspectRatio: '4/3', zIndex: 2 }}>
+        <div ref={photoRef} className="absolute left-1/2 top-1/4 -translate-x-1/2" style={{ width: '65%', aspectRatio: '4/3', zIndex: 2 }}>
           <AnimatePresence mode="popLayout">
             {topPhoto ? (
               <motion.div
@@ -214,11 +240,13 @@ function EnvelopeScene({
 interface PhotoStackProps {
   photos: Photo[];
   transforms: { id: string; rot: number; x: number; y: number; z: number }[];
+  photoSize?: { w: number; h: number } | null;
 }
 
 function PhotoStack({
   photos,
   transforms,
+  photoSize,
 }: PhotoStackProps): JSX.Element {
   return (
     <div className="relative" style={{ width: 420, height: 320 }}>
@@ -248,7 +276,7 @@ function PhotoStack({
               >
                 <motion.div
                   className="relative rounded-2xl bg-white shadow-lg"
-                  style={{ width: '100%', height: '100%', aspectRatio: '4/3' }}
+                  style={photoSize ? { width: photoSize.w, height: photoSize.h } : { width: '100%', height: '100%', aspectRatio: '4/3' }}
                   whileHover={{ y: -10 }}
                   transition={{ type: "spring", stiffness: 420, damping: 32 }}
                 >
