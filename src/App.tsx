@@ -7,18 +7,19 @@ type Photo = {
   alt?: string;
 };
 
-// Dynamically load all photos from src/assets/photos folder
-const photoModules = import.meta.glob('/src/assets/photos/*', { eager: true }) as Record<string, any>;
+const PHOTO_COUNT = 5;
 
 function getInitialPhotos(): Photo[] {
-  const photos = Object.entries(photoModules)
-    .map(([path, module], index) => ({
-      id: `p${index}`,
-      src: (module.default || path).replace(/\/src/, ''),
-      alt: `Photo ${index + 1}`,
-    }));
+  const photos: Photo[] = [];
+  
+  for (let i = 1; i <= PHOTO_COUNT; i++) {
+    photos.push({
+      id: `p${i}`,
+      src: `/photos/${i}.jpg`,
+      alt: `Photo ${i}`,
+    });
+  }
 
-  // Shuffle the array
   const shuffled = [...photos];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -35,7 +36,6 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 function seededRotate(seed: string): number {
-  // Create deterministic rotation based on string seed (range ~[-8, 8] degrees)
   let h = 0;
   for (let i = 0; i < seed.length; i++) {
     h = (h * 31 + seed.charCodeAt(i)) >>> 0;
@@ -247,7 +247,7 @@ function PhotoStack({
                 transition={{ type: "spring", stiffness: 360, damping: 30 }}
               >
                 <motion.div
-                  className="relative rounded-2xl bg-white shadow-md"
+                  className="relative rounded-2xl bg-white shadow-lg"
                   style={{ width: '100%', height: '100%', aspectRatio: '4/3' }}
                   whileHover={{ y: -10 }}
                   transition={{ type: "spring", stiffness: 420, damping: 32 }}
