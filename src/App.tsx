@@ -7,7 +7,7 @@ type Photo = {
   alt?: string;
 };
 
-const PHOTO_COUNT = 5;
+const PHOTO_COUNT = 8;
 
 function getInitialPhotos(): Photo[] {
   const photos: Photo[] = [];
@@ -89,7 +89,7 @@ export default function App(): JSX.Element {
       <div className="relative flex h-full w-full items-stretch">
         {/* LEFT: Envelope */}
         <div className="relative w-[50%] min-w-[360px] overflow-hidden">
-          <div className="absolute w-full h-full left-1/2 -translate-x-1/2">
+          <div className="w-full h-full flex items-center justify-center">
             <EnvelopeScene
               topPhoto={topPhoto}
               remaining={inEnvelope.length}
